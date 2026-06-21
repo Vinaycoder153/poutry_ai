@@ -23,7 +23,6 @@ backend/uploads/*
 # ML Pipeline
 ml_pipeline/runs/
 ml_pipeline/checkpoints/
-poutry_ai/dataset/
 *.pth
 *.pt
 *.onnx
