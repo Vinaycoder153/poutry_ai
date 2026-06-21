@@ -5,7 +5,8 @@ poutry_ai/node_modules
 poutry_ai/dist
 backend/uploads
 backend/app/__pycache__
-ml_pipeline/checkpoints
+ml_pipeline/checkpoints/best.pth
+ml_pipeline/checkpoints/latest.pth
 .git
 *.db
 *.sqlite
