@@ -35,8 +35,8 @@ async def predict(request: Request, file: UploadFile = File(...)):
 
     # 2. Extension Check
     file_ext = Path(file.filename).suffix.lower() if file.filename else ".jpg"
-    if file_ext not in [".jpg", ".jpeg", ".png"]:
-        raise HTTPException(status_code=400, detail="Only JPG, JPEG, and PNG images are supported.")
+    if file_ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+        raise HTTPException(status_code=400, detail="Only JPG, JPEG, PNG, and WEBP images are supported.")
 
     raw = await file.read()
     if raw is None:
@@ -65,15 +65,17 @@ async def predict(request: Request, file: UploadFile = File(...)):
     # 5. Save the original and cropped files
     unique_id = uuid.uuid4().hex
     original_filename = f"original_{unique_id}{file_ext}"
-    cropped_filename = f"cropped_{unique_id}{file_ext}"
-    
     original_saved_path = uploads_dir / original_filename
+
+    # Determine save format for cropped image — always save as .jpg for compatibility
+    cropped_save_ext = ".jpg"
+    cropped_filename = f"cropped_{unique_id}{cropped_save_ext}"
     cropped_saved_path = uploads_dir / cropped_filename
 
     try:
         with open(original_saved_path, "wb") as out_f:
             out_f.write(raw)
-        cropped_img.save(cropped_saved_path)
+        cropped_img.save(cropped_saved_path, format="JPEG", quality=95)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not save images: {e}")
 

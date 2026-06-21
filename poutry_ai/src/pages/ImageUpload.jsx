@@ -97,7 +97,31 @@ export default function ImageUpload({ onAnalysisComplete, settings }) {
     }
   };
 
-  const processImageFile = (file) => {
+  const validateImageResolution = (file) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(img.src);
+        if (img.width < 200 || img.height < 200) {
+          resolve({
+            valid: false,
+            message: `Image resolution is too low (${img.width}x${img.height}px). Please upload an image of at least 200x200 pixels.`
+          });
+        } else {
+          resolve({ valid: true });
+        }
+      };
+      img.onerror = () => {
+        resolve({
+          valid: false,
+          message: "Failed to read image dimensions. Please upload a valid image file."
+        });
+      };
+    });
+  };
+
+  const processImageFile = async (file) => {
     setUploadError(null);
     if (!file) return;
 
@@ -114,13 +138,26 @@ export default function ImageUpload({ onAnalysisComplete, settings }) {
       return;
     }
 
-    // 2. Format validation (.jpg, .jpeg, .png)
-    const validExtensions = ['.jpg', '.jpeg', '.png'];
+    // 2. Format validation (.jpg, .jpeg, .png, .webp)
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
     const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
     if (!file.type.startsWith('image/') || !validExtensions.includes(fileExt)) {
       setUploadError({
         title: "Invalid File Type",
-        message: "Only JPG, JPEG, and PNG image formats are supported. Please upload a chicken vent image in these formats."
+        message: "Only JPG, JPEG, PNG, and WEBP image formats are supported. Please upload a chicken vent image in these formats."
+      });
+      setSelectedImage(null);
+      setSelectedImageName('');
+      setImageFile(null);
+      return;
+    }
+
+    // 3. Resolution check (client-side)
+    const resValidation = await validateImageResolution(file);
+    if (!resValidation.valid) {
+      setUploadError({
+        title: "Low Resolution Image",
+        message: resValidation.message
       });
       setSelectedImage(null);
       setSelectedImageName('');
@@ -311,12 +348,12 @@ export default function ImageUpload({ onAnalysisComplete, settings }) {
               type="file" 
               ref={fileInputRef}
               className="file-input"
-              accept="image/*"
+              accept="image/jpeg, image/png, image/jpg, image/webp"
               onChange={handleChange}
             />
             <UploadCloud size={48} className="dropzone-icon" />
             <h3 className="dropzone-title">Drag &amp; drop chicken photo</h3>
-            <p className="dropzone-subtitle">Supports JPG, PNG formats (Max size 10MB)</p>
+            <p className="dropzone-subtitle">Supports JPG, PNG, and WEBP formats (Max size 10MB)</p>
             <button type="button" className="btn btn-secondary">
               Browse Files
             </button>
