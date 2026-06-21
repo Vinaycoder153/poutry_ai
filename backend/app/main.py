@@ -555,3 +555,28 @@ def update_notif_read(id: str, payload: dict):
 def clear_notifs():
     db.clear_notifications()
     return {"status": "ok"}
+
+
+# Serve frontend SPA static files if the dist folder exists
+from fastapi.responses import FileResponse
+
+dist_dir = repo_root / "poutry_ai" / "dist"
+
+@app.get("/{catchall:path}")
+def serve_spa(request: Request, catchall: str):
+    # Ignore API and Uploads requests in catch-all
+    if catchall.startswith("api") or catchall.startswith("uploads"):
+        raise HTTPException(status_code=404, detail="Not Found")
+        
+    # If the file exists in the dist directory (like assets/index.js), serve it
+    file_path = dist_dir / catchall
+    if file_path.exists() and file_path.is_file():
+        return FileResponse(file_path)
+    
+    # Fallback to index.html for React Router routing
+    index_file = dist_dir / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+        
+    raise HTTPException(status_code=404, detail="Not Found")
+

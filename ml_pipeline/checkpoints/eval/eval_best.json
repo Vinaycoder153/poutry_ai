@@ -1,0 +1,14 @@
+{
+  "accuracy": 0.9230769230769231,
+  "precision_macro": 0.9285714285714286,
+  "recall_macro": 0.9285714285714286,
+  "f1_macro": 0.9258241758241758,
+  "num_samples": 26,
+  "class_names": [
+    "healthy",
+    "dirty",
+    "inflamed",
+    "prolapse"
+  ],
+  "checkpoint": "C:\\Users\\Dell\\Downloads\\poutry_ai\\ml_pipeline\\checkpoints\\best.pth"
+}

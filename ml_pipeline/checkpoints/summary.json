@@ -1,0 +1,12 @@
+{
+  "best_val_acc": 0.9230769230769231,
+  "best_epoch": 7,
+  "class_names": [
+    "healthy",
+    "dirty",
+    "inflamed",
+    "prolapse"
+  ],
+  "backbone": "resnet50",
+  "checkpoints_dir": "C:\\Users\\Dell\\Downloads\\poutry_ai\\ml_pipeline\\checkpoints"
+}

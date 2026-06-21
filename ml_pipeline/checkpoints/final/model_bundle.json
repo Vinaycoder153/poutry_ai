@@ -1,0 +1,30 @@
+{
+  "out": "C:\\Users\\Dell\\Downloads\\poutry_ai\\ml_pipeline\\checkpoints\\final\\model_bundle.pth",
+  "class_names": [
+    "healthy",
+    "dirty",
+    "inflamed",
+    "prolapse"
+  ],
+  "backbone": "resnet50",
+  "num_classes": 4,
+  "preprocess": {
+    "resize_shorter_side": 256,
+    "crop_size": 224,
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "training_summary": {
+    "best_val_acc": 0.9230769230769231,
+    "best_epoch": 7,
+    "backbone_in_ckpt": "resnet50"
+  }
+}

@@ -22,10 +22,12 @@ backend/uploads/*
 
 # ML Pipeline
 ml_pipeline/runs/
-ml_pipeline/checkpoints/
+ml_pipeline/checkpoints/best.pth
+ml_pipeline/checkpoints/latest.pth
 *.pth
 *.pt
 *.onnx
+!ml_pipeline/checkpoints/final/model_bundle.pth
 
 # OS files
 .DS_Store
