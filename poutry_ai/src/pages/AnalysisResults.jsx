@@ -19,6 +19,7 @@ export default function AnalysisResults({
   onCorrect,
   user
 }) {
+  const API_BASE = import.meta.env.VITE_API_URL || '';
   const [hoveredBox, setHoveredBox] = useState(false);
   const [completedActions, setCompletedActions] = useState({});
   const [isCorrecting, setIsCorrecting] = useState(false);
@@ -40,7 +41,7 @@ export default function AnalysisResults({
 
   const handleSubmitCorrection = async () => {
     try {
-      const response = await fetch(`/api/history/${result.id}/correct`, {
+      const response = await fetch(`${API_BASE}/api/history/${result.id}/correct`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ correctedStatus: correctedClass })
