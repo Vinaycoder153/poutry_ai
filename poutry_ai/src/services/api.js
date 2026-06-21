@@ -59,6 +59,9 @@ class ApiService {
     if (pred.image) {
       pred.image = this.sanitizeImageUrl(pred.image);
     }
+    if (pred.originalImage) {
+      pred.originalImage = this.sanitizeImageUrl(pred.originalImage);
+    }
     return pred;
   }
 

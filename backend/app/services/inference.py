@@ -187,3 +187,148 @@ def ensure_loaded(force_reload=False):
     model = model_local
     transform = transform_local
     last_bundle_mtime = mtime
+
+
+def check_image_quality(img) -> tuple[bool, str]:
+    """
+    Validates resolution, average brightness, and sharpness (blurriness) of the image.
+    Returns (True, "Quality checks passed") or (False, error_message).
+    """
+    # 1. Resolution Check
+    w, h = img.size
+    if w < 200 or h < 200:
+        return False, f"Image resolution is too low ({w}x{h}). Please upload an image of at least 200x200 pixels."
+
+    # Convert to grayscale for brightness and blurriness checks
+    gray_img = img.convert("L")
+    pixels = np.array(gray_img)
+
+    # 2. Brightness Check
+    mean_brightness = float(np.mean(pixels))
+    if mean_brightness < 40.0:
+        return False, f"Image is too dark (average brightness {mean_brightness:.1f}/255). Please upload a well-lit image."
+    if mean_brightness > 240.0:
+        return False, f"Image is too bright (average brightness {mean_brightness:.1f}/255). Please upload an image with balanced lighting."
+
+    # 3. Blurriness Check using 2D Laplacian convolution in PyTorch
+    import torch.nn.functional as F
+
+    img_tensor = torch.from_numpy(pixels).float().unsqueeze(0).unsqueeze(0)  # Shape (1, 1, H, W)
+    padded = F.pad(img_tensor, (1, 1, 1, 1), mode='replicate')
+    laplacian_kernel = torch.tensor(
+        [[0, 1, 0], [1, -4, 1], [0, 1, 0]], dtype=torch.float32
+    ).view(1, 1, 3, 3)
+    laplacian = F.conv2d(padded, laplacian_kernel, padding=0)
+    variance = float(laplacian.var().item())
+
+    if variance < 50.0:
+        return False, f"Image is too blurry (blur metric {variance:.1f}). Please upload a sharp, in-focus image."
+
+    return True, "Quality checks passed"
+
+
+def detect_vent(img) -> tuple[bool, list[float] | None, any]:
+    """
+    Checks if a chicken vent is visible in the image using CAM.
+    If visible, returns (True, box, cropped_image).
+    Otherwise returns (False, None, None).
+    """
+    ensure_loaded()
+
+    import torchvision.transforms as T
+
+    # Direct resize to preserve the entire aspect ratio of the image for detection pass
+    resize_tf = T.Compose(
+        [
+            T.Resize((224, 224)),
+            T.ToTensor(),
+            T.Normalize(
+                mean=tuple(bundle["preprocess"]["mean"]),
+                std=tuple(bundle["preprocess"]["std"]),
+            ),
+        ]
+    )
+
+    x = resize_tf(img).unsqueeze(0).to(device)
+
+    features = None
+
+    def hook(module, input, output):
+        nonlocal features
+        features = output
+
+    hook_handle = None
+    if hasattr(model, "layer4"):
+        hook_handle = model.layer4.register_forward_hook(hook)
+
+    try:
+        with torch.no_grad():
+            logits = model(x)
+            probs = torch.softmax(logits, dim=1).squeeze(0).cpu().tolist()
+    finally:
+        if hook_handle is not None:
+            hook_handle.remove()
+
+    top_idx = int(torch.tensor(probs).argmax().item())
+    top_prob = probs[top_idx]
+
+    # We require a baseline classification confidence
+    if top_prob < 0.35:
+        return False, None, None
+
+    # Extract Class Activation Map
+    if (
+        features is None
+        or not hasattr(model, "fc")
+        or not hasattr(model.fc, "weight")
+    ):
+        return False, None, None
+
+    try:
+        features_squeezed = features.squeeze(0)
+        weights = model.fc.weight[top_idx].detach()
+        cam = (features_squeezed * weights.view(-1, 1, 1)).sum(0)
+
+        # Check raw CAM peak activation value
+        raw_cam_max = float(cam.max().item())
+        if raw_cam_max < 1.2:
+            return False, None, None
+
+        # Normalize CAM
+        cam = cam - cam.min()
+        cam_max = cam.max()
+        if cam_max > 0:
+            cam = cam / cam_max
+
+        cam_np = cam.cpu().numpy()
+
+        # Calculate bounding box percentages relative to the original image shape
+        box = calculate_bbox_from_cam(cam_np, threshold=0.45)
+
+        # Verify box size to reject scattered attention (OOD)
+        xmin, ymin, width, height = box
+
+        # If the box is too tiny (e.g. < 8% of size) or spans almost the entire image (uniform attention, > 92%), reject it.
+        if width < 8.0 or height < 8.0 or width > 92.0 or height > 92.0:
+            return False, None, None
+
+        # Crop the original image using pixel coordinates
+        img_w, img_h = img.size
+
+        # Compute pixel coordinates
+        x1 = max(0, int(xmin * img_w / 100.0))
+        y1 = max(0, int(ymin * img_h / 100.0))
+        x2 = min(img_w, int((xmin + width) * img_w / 100.0))
+        y2 = min(img_h, int((ymin + height) * img_h / 100.0))
+
+        # Prevent degenerate crops
+        if (x2 - x1) < 20 or (y2 - y1) < 20:
+            return False, None, None
+
+        cropped_img = img.crop((x1, y1, x2, y2))
+        return True, box, cropped_img
+
+    except Exception as e:
+        print(f"Error in detect_vent: {e}")
+        return False, None, None
+

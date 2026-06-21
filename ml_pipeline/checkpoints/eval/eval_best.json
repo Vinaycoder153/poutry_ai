@@ -1,8 +1,8 @@
 {
   "accuracy": 0.9230769230769231,
-  "precision_macro": 0.9285714285714286,
+  "precision_macro": 0.9444444444444444,
   "recall_macro": 0.9285714285714286,
-  "f1_macro": 0.9258241758241758,
+  "f1_macro": 0.9270833333333333,
   "num_samples": 26,
   "class_names": [
     "healthy",

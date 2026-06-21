@@ -3,15 +3,15 @@ from app.database.connection import get_db, qp, IS_POSTGRES
 
 def add_prediction(
     pred_id, date, time, image, image_name, status, confidence, 
-    title, findings, actions, reviewed, flagged, model_version, analysis_time, box=None
+    title, findings, actions, reviewed, flagged, model_version, analysis_time, box=None, original_image=None
 ):
     conn, cursor = get_db()
     if IS_POSTGRES:
         query = """
         INSERT INTO predictions (
             id, date, time, image, image_name, status, confidence, 
-            title, findings, actions, reviewed, flagged, model_version, analysis_time, box
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            title, findings, actions, reviewed, flagged, model_version, analysis_time, box, original_image
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (id) DO UPDATE SET
             date = EXCLUDED.date,
             time = EXCLUDED.time,
@@ -26,14 +26,15 @@ def add_prediction(
             flagged = EXCLUDED.flagged,
             model_version = EXCLUDED.model_version,
             analysis_time = EXCLUDED.analysis_time,
-            box = EXCLUDED.box
+            box = EXCLUDED.box,
+            original_image = EXCLUDED.original_image
         """
     else:
         query = """
         INSERT OR REPLACE INTO predictions (
             id, date, time, image, image_name, status, confidence, 
-            title, findings, actions, reviewed, flagged, model_version, analysis_time, box
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            title, findings, actions, reviewed, flagged, model_version, analysis_time, box, original_image
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
     
     cursor.execute(
@@ -53,7 +54,8 @@ def add_prediction(
             1 if flagged else 0,
             model_version,
             analysis_time,
-            json.dumps(box) if box else None
+            json.dumps(box) if box else None,
+            original_image
         )
     )
     if not IS_POSTGRES:
@@ -66,6 +68,7 @@ def get_predictions():
     rows = cursor.fetchall()
     predictions = []
     for r in rows:
+        row_keys = r.keys()
         predictions.append({
             "id": r["id"],
             "date": r["date"],
@@ -81,7 +84,8 @@ def get_predictions():
             "flagged": bool(r["flagged"]),
             "modelVersion": r["model_version"],
             "analysisTime": r["analysis_time"],
-            "box": json.loads(r["box"]) if ("box" in r.keys() and r["box"]) else None
+            "box": json.loads(r["box"]) if ("box" in row_keys and r["box"]) else None,
+            "originalImage": r["original_image"] if ("original_image" in row_keys and r["original_image"]) else None
         })
     conn.close()
     return predictions

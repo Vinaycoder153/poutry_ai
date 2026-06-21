@@ -7,18 +7,36 @@ import torch
 from pathlib import Path
 from PIL import Image
 from fastapi import APIRouter, File, UploadFile, HTTPException, Request
+from typing import List, Dict, Any
 import app.database.crud as db
 import app.services.inference as inference
 from app.core.config import uploads_dir, repo_root
+from app.schemas import (
+    PredictionResponse,
+    PredictionCorrection,
+    PredictionReview,
+    PredictionFlag,
+    ActionStatusResponse,
+    PredictionCorrectionResponse,
+    PredictionReviewResponse,
+    PredictionFlagResponse
+)
+
 
 router = APIRouter()
 
-@router.post("/predict")
+@router.post("/predict", response_model=PredictionResponse)
 async def predict(request: Request, file: UploadFile = File(...)):
     inference.ensure_loaded()
 
+    # 1. Content Type Check
     if file.content_type and not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
+        raise HTTPException(status_code=400, detail="File must be an image.")
+
+    # 2. Extension Check
+    file_ext = Path(file.filename).suffix.lower() if file.filename else ".jpg"
+    if file_ext not in [".jpg", ".jpeg", ".png"]:
+        raise HTTPException(status_code=400, detail="Only JPG, JPEG, and PNG images are supported.")
 
     raw = await file.read()
     if raw is None:
@@ -31,54 +49,51 @@ async def predict(request: Request, file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Could not read image: {e}")
 
-    file_ext = Path(file.filename).suffix if file.filename else ".jpg"
-    unique_filename = f"{uuid.uuid4().hex}{file_ext}"
-    saved_path = uploads_dir / unique_filename
-    with open(saved_path, "wb") as out_f:
-        out_f.write(raw)
+    # 3. Quality Validation Check (Resolution, Brightness, Blurriness)
+    passed, error_msg = inference.check_image_quality(img)
+    if not passed:
+        raise HTTPException(status_code=400, detail=error_msg)
+
+    # 4. Vent Visibility / AI Detection Check
+    detected, box, cropped_img = inference.detect_vent(img)
+    if not detected:
+        raise HTTPException(
+            status_code=422,
+            detail="Vent region not detected. Please upload a clearer chicken vent/cloaca image."
+        )
+
+    # 5. Save the original and cropped files
+    unique_id = uuid.uuid4().hex
+    original_filename = f"original_{unique_id}{file_ext}"
+    cropped_filename = f"cropped_{unique_id}{file_ext}"
+    
+    original_saved_path = uploads_dir / original_filename
+    cropped_saved_path = uploads_dir / cropped_filename
+
+    try:
+        with open(original_saved_path, "wb") as out_f:
+            out_f.write(raw)
+        cropped_img.save(cropped_saved_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not save images: {e}")
 
     base_url = str(request.base_url).rstrip("/")
-    image_url = f"{base_url}/uploads/{unique_filename}"
+    image_url = f"{base_url}/uploads/{cropped_filename}"
+    original_image_url = f"{base_url}/uploads/{original_filename}"
 
+    # 6. Run Prediction on Cropped Image
     t0 = time.time()
-    x = inference.transform(img).unsqueeze(0).to(inference.device)
-
-    features = None
-    def hook(module, input, output):
-        nonlocal features
-        features = output
-
-    hook_handle = None
-    if hasattr(inference.model, "layer4"):
-        hook_handle = inference.model.layer4.register_forward_hook(hook)
+    x = inference.transform(cropped_img).unsqueeze(0).to(inference.device)
 
     with torch.no_grad():
         logits = inference.model(x)
         probs = torch.softmax(logits, dim=1).squeeze(0).cpu().tolist()
-
-    if hook_handle is not None:
-        hook_handle.remove()
 
     class_names = inference.bundle["class_names"]
     top_idx = int(torch.tensor(probs).argmax().item())
 
     top_class = class_names[top_idx]
     top_prob = float(probs[top_idx])
-
-    box = [38.0, 36.0, 24.0, 22.0]
-    if features is not None and hasattr(inference.model, "fc") and hasattr(inference.model.fc, "weight"):
-        try:
-            features_squeezed = features.squeeze(0)
-            weights = inference.model.fc.weight[top_idx].detach()
-            cam = (features_squeezed * weights.view(-1, 1, 1)).sum(0)
-            cam = cam - cam.min()
-            cam_max = cam.max()
-            if cam_max > 0:
-                cam = cam / cam_max
-            cam_np = cam.cpu().numpy()
-            box = inference.calculate_bbox_from_cam(cam_np)
-        except Exception as cam_err:
-            print(f"CAM localization error: {cam_err}")
 
     elapsed = time.time() - t0
     status, title, findings, actions = inference.get_class_details(top_class)
@@ -93,7 +108,7 @@ async def predict(request: Request, file: UploadFile = File(...)):
         date=date_str,
         time=time_str,
         image=image_url,
-        image_name=file.filename or unique_filename,
+        image_name=file.filename or cropped_filename,
         status=status,
         confidence=round(top_prob * 100, 1),
         title=title,
@@ -103,14 +118,15 @@ async def predict(request: Request, file: UploadFile = File(...)):
         flagged=(status == "danger"),
         model_version=inference.bundle.get("version", "V2.4-CLOACA-NET"),
         analysis_time=f"{elapsed:.2f}s",
-        box=box
+        box=box,
+        original_image=original_image_url
     )
 
     if status == "danger":
         db.add_notification(
             notif_id=f"notif-{uuid.uuid4().hex[:6]}",
             title="CRITICAL SALMONELLA RISK DETECTED",
-            message=f"High risk score ({round(top_prob * 100, 1)}%) mapped in Case {pred_id} ({file.filename or unique_filename}).",
+            message=f"High risk score ({round(top_prob * 100, 1)}%) mapped in Case {pred_id} ({file.filename or cropped_filename}).",
             notif_type="danger",
             time_str="Just Now",
             read=False
@@ -130,7 +146,7 @@ async def predict(request: Request, file: UploadFile = File(...)):
         "date": date_str,
         "time": time_str,
         "image": image_url,
-        "imageName": file.filename or unique_filename,
+        "imageName": file.filename or cropped_filename,
         "status": status,
         "confidence": round(top_prob * 100, 1),
         "title": title,
@@ -140,17 +156,18 @@ async def predict(request: Request, file: UploadFile = File(...)):
         "flagged": status == "danger",
         "modelVersion": inference.bundle.get("version", "V2.4-CLOACA-NET"),
         "analysisTime": f"{elapsed:.2f}s",
-        "box": box
+        "box": box,
+        "originalImage": original_image_url
     }
 
-@router.get("/history")
+@router.get("/history", response_model=List[PredictionResponse])
 def get_history():
     return db.get_predictions()
 
-@router.put("/history/{id}/correct")
-async def correct_prediction(id: str, payload: dict):
-    corrected_status = payload.get("correctedStatus")
-    if not corrected_status or corrected_status not in ["healthy", "dirty", "inflamed", "prolapse"]:
+@router.put("/history/{id}/correct", response_model=PredictionCorrectionResponse)
+async def correct_prediction(id: str, payload: PredictionCorrection):
+    corrected_status = payload.correctedStatus
+    if corrected_status not in ["healthy", "dirty", "inflamed", "prolapse"]:
         raise HTTPException(status_code=400, detail="Invalid corrected status")
 
     predictions = db.get_predictions()
@@ -179,28 +196,29 @@ async def correct_prediction(id: str, payload: dict):
         except Exception as e:
             print(f"Failed to copy image to dataset folder: {e}")
 
-    return {
-        "status": "ok",
-        "id": id,
-        "correctedStatus": corrected_status,
-        "title": title,
-        "findings": findings,
-        "actions": actions
-    }
+    return PredictionCorrectionResponse(
+        status="ok",
+        id=id,
+        correctedStatus=corrected_status,
+        title=title,
+        findings=findings,
+        actions=actions
+    )
 
-@router.put("/history/{id}/reviewed")
-def update_reviewed(id: str, payload: dict):
-    reviewed = payload.get("reviewed", False)
+@router.put("/history/{id}/reviewed", response_model=PredictionReviewResponse)
+def update_reviewed(id: str, payload: PredictionReview):
+    reviewed = payload.reviewed
     db.update_prediction_reviewed(id, reviewed)
-    return {"status": "ok", "id": id, "reviewed": reviewed}
+    return PredictionReviewResponse(status="ok", id=id, reviewed=reviewed)
 
-@router.put("/history/{id}/flagged")
-def update_flagged(id: str, payload: dict):
-    flagged = payload.get("flagged", False)
+@router.put("/history/{id}/flagged", response_model=PredictionFlagResponse)
+def update_flagged(id: str, payload: PredictionFlag):
+    flagged = payload.flagged
     db.update_prediction_flagged(id, flagged)
-    return {"status": "ok", "id": id, "flagged": flagged}
+    return PredictionFlagResponse(status="ok", id=id, flagged=flagged)
 
-@router.delete("/history/{id}")
+@router.delete("/history/{id}", response_model=ActionStatusResponse)
 def delete_item(id: str):
     db.delete_prediction(id)
-    return {"status": "ok", "id": id}
+    return ActionStatusResponse(status="ok", id=id)
+

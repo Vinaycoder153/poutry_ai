@@ -26,7 +26,7 @@ def init_db():
     conn, cursor = get_db()
     
     if IS_POSTGRES:
-        # Create predictions table in Postgres (with box column built-in)
+        # Create predictions table in Postgres (with box and original_image columns built-in)
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS predictions (
             id TEXT PRIMARY KEY,
@@ -43,7 +43,8 @@ def init_db():
             flagged INTEGER DEFAULT 0,
             model_version TEXT,
             analysis_time TEXT,
-            box TEXT
+            box TEXT,
+            original_image TEXT
         );
         """)
     else:
@@ -72,6 +73,12 @@ def init_db():
         except sqlite3.OperationalError:
             pass
             
+        # Add original_image column if it doesn't exist dynamically
+        try:
+            cursor.execute("ALTER TABLE predictions ADD COLUMN original_image TEXT;")
+        except sqlite3.OperationalError:
+            pass
+            
     # Create notifications table
     cursor.execute(qp("""
     CREATE TABLE IF NOT EXISTS notifications (
@@ -87,3 +94,4 @@ def init_db():
     if not IS_POSTGRES:
         conn.commit()
     conn.close()
+

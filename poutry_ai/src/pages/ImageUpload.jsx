@@ -73,6 +73,7 @@ export default function ImageUpload({ onAnalysisComplete, settings }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [loaderStep, setLoaderStep] = useState(0);
   const [loaderProgress, setLoaderProgress] = useState(0);
+  const [uploadError, setUploadError] = useState(null);
   
   const [imageFile, setImageFile] = useState(null);
   const fileInputRef = useRef(null);
@@ -97,16 +98,44 @@ export default function ImageUpload({ onAnalysisComplete, settings }) {
   };
 
   const processImageFile = (file) => {
-    if (file && file.type.startsWith('image/')) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setSelectedImage(e.target.result);
-        setSelectedImageName(file.name);
-        setPresetType(null); // Custom upload
-      };
-      reader.readAsDataURL(file);
+    setUploadError(null);
+    if (!file) return;
+
+    // 1. File size validation (10MB)
+    const maxSizeBytes = 10 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      setUploadError({
+        title: "File Too Large",
+        message: `The selected image is ${(file.size / (1024 * 1024)).toFixed(1)}MB, which exceeds the 10MB limit. Please upload a smaller image.`
+      });
+      setSelectedImage(null);
+      setSelectedImageName('');
+      setImageFile(null);
+      return;
     }
+
+    // 2. Format validation (.jpg, .jpeg, .png)
+    const validExtensions = ['.jpg', '.jpeg', '.png'];
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!file.type.startsWith('image/') || !validExtensions.includes(fileExt)) {
+      setUploadError({
+        title: "Invalid File Type",
+        message: "Only JPG, JPEG, and PNG image formats are supported. Please upload a chicken vent image in these formats."
+      });
+      setSelectedImage(null);
+      setSelectedImageName('');
+      setImageFile(null);
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setSelectedImage(e.target.result);
+      setSelectedImageName(file.name);
+      setPresetType(null); // Custom upload
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDrop = (e) => {
@@ -130,6 +159,7 @@ export default function ImageUpload({ onAnalysisComplete, settings }) {
     setSelectedImageName(name);
     setPresetType(type);
     setImageFile(null);
+    setUploadError(null);
   };
 
   const startAnalysis = async () => {
@@ -138,6 +168,7 @@ export default function ImageUpload({ onAnalysisComplete, settings }) {
     setAnalyzing(true);
     setLoaderStep(0);
     setLoaderProgress(0);
+    setUploadError(null);
 
     // Simulated progress bar updates while waiting for API
     let step = 0;
@@ -173,7 +204,10 @@ export default function ImageUpload({ onAnalysisComplete, settings }) {
     } catch (error) {
       clearInterval(interval);
       setAnalyzing(false);
-      alert(`AI Diagnostic Run Failed: ${error.message}`);
+      setUploadError({
+        title: "AI Screening Rejected",
+        message: error.message || "An unexpected error occurred during the analysis run."
+      });
     }
   };
 
@@ -381,7 +415,7 @@ export default function ImageUpload({ onAnalysisComplete, settings }) {
             </div>
           )}
 
-          {!selectedImage && (
+          {!selectedImage && !uploadError && (
             <div style={{
               display: 'flex',
               gap: '10px',
@@ -399,6 +433,53 @@ export default function ImageUpload({ onAnalysisComplete, settings }) {
                   Screening Instructions
                 </strong>
                 Position the camera 10-15 cm directly facing the chicken's vent. Ensure adequate lighting, clean off extreme mud blocks, and verify the vent/cloacal ring is fully centered in the frame.
+              </div>
+            </div>
+          )}
+
+          {uploadError && (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              backgroundColor: 'var(--danger-light)',
+              border: '1px solid var(--danger-border)',
+              borderRadius: 'var(--radius-md)',
+              padding: '16px',
+              fontSize: '13px',
+              color: 'var(--text-primary)',
+              marginTop: selectedImage ? '16px' : 'auto',
+              boxShadow: 'var(--shadow-sm)'
+            }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <ShieldAlert size={20} className="text-danger" style={{ color: 'var(--danger-color)', flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <strong style={{ fontSize: '14px', color: 'var(--danger-color)', display: 'block' }}>
+                    {uploadError.title}
+                  </strong>
+                  <span style={{ display: 'block', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: '1.4' }}>
+                    {uploadError.message}
+                  </span>
+                </div>
+              </div>
+              
+              <div style={{
+                marginTop: '4px',
+                paddingTop: '10px',
+                borderTop: '1px solid var(--danger-border)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px'
+              }}>
+                <span style={{ fontWeight: 600, fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Tips for a successful scan:
+                </span>
+                <ul style={{ paddingLeft: '16px', margin: 0, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px', listStyleType: 'disc' }}>
+                  <li><strong>Check Distance:</strong> Hold camera 10-15 cm directly from the vent.</li>
+                  <li><strong>Adjust Lighting:</strong> Ensure direct, bright lighting without harsh shadows.</li>
+                  <li><strong>Verify Centering:</strong> Center the cloacal ring directly in the frame.</li>
+                  <li><strong>Clean Obstructions:</strong> Clean off major dry mud clumps from surrounding feathers.</li>
+                </ul>
               </div>
             </div>
           )}

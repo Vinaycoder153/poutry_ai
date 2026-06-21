@@ -24,7 +24,7 @@
   },
   "training_summary": {
     "best_val_acc": 0.9230769230769231,
-    "best_epoch": 7,
+    "best_epoch": 3,
     "backbone_in_ckpt": "resnet50"
   }
 }
