@@ -39,6 +39,9 @@ COPY --from=builder /app/frontend/dist ./poutry_ai/dist
 # Create necessary directories
 RUN mkdir -p /app/backend/uploads /app/ml_pipeline/checkpoints/final
 
+# Create appuser with UID 1000 so getpwuid() succeeds under Hugging Face Space user
+RUN useradd -u 1000 -m -s /bin/bash appuser
+
 # Adjust permissions for Hugging Face Spaces (user 1000)
 RUN chown -R 1000:1000 /app && chmod -R 777 /app
 

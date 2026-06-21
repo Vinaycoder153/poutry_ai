@@ -10,6 +10,7 @@ import Community from './pages/Community';
 import Settings from './pages/Settings';
 import ModelCenter from './pages/ModelCenter';
 import { X, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { api } from './services/api';
 
 // Reusable SVG drawings for pre-seeded history items
 const SVG_HEALTHY = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23f3f4f6"/><ellipse cx="200" cy="150" rx="30" ry="25" fill="%23fda4af" fill-opacity="0.6" stroke="%23f43f5e"/><circle cx="200" cy="150" r="8" fill="%23e11d48"/><text x="200" y="270" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="14" fill="%234b5563">Preset: Normal healthy vent</text></svg>`;
@@ -17,7 +18,6 @@ const SVG_WARNING = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/
 const SVG_DANGER = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23f3f4f6"/><path d="M170,170 C165,200 175,220 170,230" stroke="%23ca8a04" fill="none" stroke-width="8"/><ellipse cx="200" cy="150" rx="35" ry="28" fill="%23fda4af" fill-opacity="0.9" stroke="%23be123c"/><circle cx="200" cy="150" r="7" fill="%237f1d1d"/><text x="200" y="270" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="14" fill="%234b5563">Preset: Severe Pastey Vent &amp; Swelling</text></svg>`;
 
 export default function App() {
-  const API_URL = import.meta.env.VITE_API_URL || '';
   
   // Authentication session state
   const [user, setUser] = useState(() => {
@@ -206,22 +206,16 @@ export default function App() {
   useEffect(() => {
     const fetchBackendData = async () => {
       try {
-        const histRes = await fetch(`${API_URL}/api/history`);
-        if (histRes.ok) {
-          const histData = await histRes.json();
-          setHistory(histData);
-        }
-        const notifRes = await fetch(`${API_URL}/api/notifications`);
-        if (notifRes.ok) {
-          const notifData = await notifRes.json();
-          setNotifications(notifData);
-        }
+        const histData = await api.getHistory();
+        setHistory(histData);
+        const notifData = await api.getNotifications();
+        setNotifications(notifData);
       } catch (e) {
         console.error("Failed to connect to Poultry AI backend server", e);
       }
     };
     fetchBackendData();
-  }, [API_URL]);
+  }, []);
 
   // Handle user authentication transitions
   const handleLogin = (userData) => {
@@ -282,9 +276,7 @@ export default function App() {
   const handleClearNotifications = async () => {
     setNotifications([]);
     try {
-      await fetch(`${API_URL}/api/notifications/clear`, {
-        method: 'DELETE'
-      });
+      await api.clearNotifications();
     } catch (e) {
       console.error("Failed to clear notifications on backend", e);
     }
@@ -293,11 +285,7 @@ export default function App() {
   const handleMarkNotificationRead = async (id) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     try {
-      await fetch(`${API_URL}/api/notifications/${id}/read`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ read: true })
-      });
+      await api.markNotificationRead(id, true);
     } catch (e) {
       console.error("Failed to mark notification read on backend", e);
     }
@@ -324,11 +312,7 @@ export default function App() {
     }
 
     try {
-      await fetch(`${API_URL}/api/history/${id}/reviewed`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reviewed: nextReviewed })
-      });
+      await api.toggleReviewed(id, nextReviewed);
     } catch (e) {
       console.error("Failed to sync reviewed status to backend", e);
     }
@@ -365,11 +349,7 @@ export default function App() {
     }
 
     try {
-      await fetch(`${API_URL}/api/history/${id}/flagged`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ flagged: nextFlagged })
-      });
+      await api.toggleFlagged(id, nextFlagged);
     } catch (e) {
       console.error("Failed to sync flagged status to backend", e);
     }
@@ -380,9 +360,7 @@ export default function App() {
     showToast('Record Deleted', `Log item ${id} was removed from history log database.`, 'info');
 
     try {
-      await fetch(`${API_URL}/api/history/${id}`, {
-        method: 'DELETE'
-      });
+      await api.deleteHistory(id);
     } catch (e) {
       console.error("Failed to delete prediction from backend", e);
     }
@@ -418,11 +396,8 @@ export default function App() {
     // Reload notifications from backend to capture the alert created by the backend
     const refreshNotifications = async () => {
       try {
-        const notifRes = await fetch(`${API_URL}/api/notifications`);
-        if (notifRes.ok) {
-          const notifData = await notifRes.json();
-          setNotifications(notifData);
-        }
+        const notifData = await api.getNotifications();
+        setNotifications(notifData);
       } catch (e) {
         console.error(e);
       }

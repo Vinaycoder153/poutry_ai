@@ -1,5 +1,6 @@
 import os
 import json
+import numpy as np
 from typing import List, Dict, Any
 from pathlib import Path
 
@@ -137,7 +138,5 @@ def main():
 
 
 if __name__ == '__main__':
-    # late import for albumentations branch
-    import numpy as np
     main()
 

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { UploadCloud, ShieldAlert, FileImage, Sparkles, Info } from 'lucide-react';
+import { api } from '../services/api';
 
 // Self-contained high-quality SVG drawings for preset demonstration cases
 const SVG_PRESET_HEALTHY = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="100%" height="100%">
@@ -159,26 +160,7 @@ export default function ImageUpload({ onAnalysisComplete, settings }) {
         throw new Error("No image file loaded. Please upload a photo or select a preset.");
       }
 
-      const formData = new FormData();
-      formData.append('file', uploadFile);
-
-      const API_BASE = import.meta.env.VITE_API_URL || '';
-      const response = await fetch(`${API_BASE}/api/predict`, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        let errMsg = `Server error (${response.status})`;
-        try {
-          const errJson = JSON.parse(errText);
-          if (errJson.detail) errMsg = errJson.detail;
-        } catch (_) {}
-        throw new Error(errMsg);
-      }
-
-      const result = await response.json();
+      const result = await api.predictImage(uploadFile);
 
       setLoaderProgress(100);
       clearInterval(interval);

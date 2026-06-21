@@ -11,9 +11,9 @@ import {
   HelpCircle,
   FileText
 } from 'lucide-react';
+import { api } from '../services/api';
 
 export default function ModelCenter({ user }) {
-  const API_BASE = import.meta.env.VITE_API_URL || '';
   const [status, setStatus] = useState(null);
   const [logs, setLogs] = useState('Console initialized. Awaiting retraining trigger...\n');
   const [isRetraining, setIsRetraining] = useState(false);
@@ -25,9 +25,7 @@ export default function ModelCenter({ user }) {
   // Fetch status on mount
   const fetchStatus = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/model/status`);
-      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-      const data = await res.json();
+      const data = await api.getModelStatus();
       setStatus(data);
       setIsRetraining(data.is_training);
       setError(null);
@@ -41,9 +39,7 @@ export default function ModelCenter({ user }) {
 
   const fetchLogs = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/model/retrain/logs`);
-      if (!res.ok) return;
-      const data = await res.json();
+      const data = await api.getModelLogs();
       if (data.logs) {
         setLogs(data.logs);
       }
@@ -84,11 +80,7 @@ export default function ModelCenter({ user }) {
     setLogs('Initializing retraining pipeline...\nLaunching background PyTorch process...\n');
     
     try {
-      const res = await fetch(`${API_BASE}/api/model/retrain`, { method: 'POST' });
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || 'Failed to start retraining');
-      }
+      await api.triggerRetrain();
       // Instantly refresh status to start rapid polling
       fetchStatus();
     } catch (e) {
