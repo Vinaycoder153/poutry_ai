@@ -30,7 +30,7 @@ app.add_middleware(
 )
 
 # Include the modular API routers
-app.include_router(api_router)
+app.include_router(api_router, prefix="/api")
 
 # Serve frontend SPA static files if the dist folder exists
 dist_dir = repo_root / "poutry_ai" / "dist"
