@@ -48,6 +48,7 @@ EXPOSE 7860
 # Define env variables
 ENV PORT=7860
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/backend
 
 # Run as non-root user 1000
 USER 1000
