@@ -1,17 +1,18 @@
 from fastapi import APIRouter
-from app.services.inference import ensure_loaded, device, bundle
+import app.services.inference as inference
 
 router = APIRouter()
 
 @router.get("/health")
 def health():
     try:
-        ensure_loaded()
-        return {"status": "ok", "device": device, "class_names": bundle["class_names"]}
+        inference.ensure_loaded()
+        return {"status": "ok", "device": inference.device, "class_names": inference.bundle["class_names"]}
     except Exception as e:
         return {
             "status": "model_not_found",
-            "device": device,
+            "device": inference.device,
             "message": "Model bundle is missing. Please run training first.",
             "detail": str(e)
         }
+

@@ -1,4 +1,24 @@
-const API_URL = import.meta.env.VITE_API_URL || '';
+const getBaseUrl = () => {
+  // If VITE_API_URL is explicitly set at build time, use it
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/$/, '');
+  }
+  
+  // If running in browser, determine dynamically
+  if (typeof window !== 'undefined') {
+    const host = window.location.host;
+    // If we're on localhost or Hugging Face directly, use relative paths
+    if (host.includes('localhost') || host.includes('127.0.0.1') || host.includes('hf.space')) {
+      return '';
+    }
+    // Otherwise, default to the production Hugging Face Spaces backend subdomain
+    return 'https://vvvinay5630-poutry-ai.hf.space';
+  }
+  
+  return '';
+};
+
+const API_URL = getBaseUrl();
 
 class ApiService {
   async request(endpoint, options = {}) {
@@ -15,7 +35,39 @@ class ApiService {
       }
       throw new Error(errorDetail || `HTTP Error ${response.status}`);
     }
-    return response.json();
+    const data = await response.json();
+    return this.sanitizeResponse(data);
+  }
+
+  sanitizeImageUrl(url) {
+    if (!url) return url;
+    // If it's a relative path, prefix it with API_URL or window location origin
+    if (url.startsWith('/')) {
+      return `${API_URL || window.location.origin}${url}`;
+    }
+    // If it's an absolute URL, check if it contains /uploads/
+    if (url.includes('/uploads/')) {
+      const parts = url.split('/uploads/');
+      const filename = parts[parts.length - 1];
+      return `${API_URL || window.location.origin}/uploads/${filename}`;
+    }
+    return url;
+  }
+
+  sanitizePrediction(pred) {
+    if (!pred || typeof pred !== 'object') return pred;
+    if (pred.image) {
+      pred.image = this.sanitizeImageUrl(pred.image);
+    }
+    return pred;
+  }
+
+  sanitizeResponse(data) {
+    if (!data) return data;
+    if (Array.isArray(data)) {
+      return data.map(item => this.sanitizePrediction(item));
+    }
+    return this.sanitizePrediction(data);
   }
 
   getHealth() {
@@ -93,3 +145,4 @@ class ApiService {
 }
 
 export const api = new ApiService();
+
