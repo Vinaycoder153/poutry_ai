@@ -1,0 +1,46 @@
+task: classification
+
+dataset:
+  # Repo-relative dataset folder
+  root_dir: poutry_ai/dataset
+  class_names: [healthy, dirty, inflamed, prolapse]
+  image_exts: [".png", ".jpg", ".jpeg", ".webp"]
+  split:
+    strategy: stratified
+    val_ratio: 0.2
+    seed: 42
+
+model:
+  backbone: resnet50
+  num_classes: 4
+  pretrained: true
+
+training:
+  batch_size: 16
+  num_epochs: 15
+  lr: 0.0002
+  weight_decay: 0.0001
+  num_workers: 2
+  early_stopping_patience: 3
+  label_smoothing: 0.0
+
+augmentation:
+  enabled: true
+  input_size: 224
+  resize_shorter_side: 256
+  crop_size: 224
+  color_jitter: 0.2
+  rotation_deg: 20
+  hflip_prob: 0.5
+  vflip_prob: 0.0
+  random_erasing_prob: 0.1
+  noise_injection_prob: 0.1
+  cutmix_alpha: 0.0
+  mixup_alpha: 0.0
+
+logging:
+  tensorboard_dir: ml_pipeline/runs
+  checkpoints_dir: ml_pipeline/checkpoints
+
+evaluation:
+  metrics: [accuracy, precision, recall, f1, confusion_matrix]

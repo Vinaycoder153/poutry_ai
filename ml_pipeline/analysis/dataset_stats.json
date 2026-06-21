@@ -1,0 +1,286 @@
+{
+  "num_classes": 4,
+  "classes": [
+    "dirty",
+    "healthy",
+    "inflamed",
+    "prolapse"
+  ],
+  "num_images_total": 120,
+  "per_class_counts": {
+    "dirty": 30,
+    "healthy": 30,
+    "inflamed": 30,
+    "prolapse": 30
+  },
+  "per_class_failed_read": {},
+  "failed_read_count": 0,
+  "failed_read": [],
+  "duplicate_groups_phash": 0,
+  "duplicate_groups_sample": [],
+  "quality_thresholds": {
+    "blur_var_10pct": 0.00046228463804380717,
+    "brightness_low_5pct": 0.4697184134239994,
+    "brightness_high_95pct": 0.7072194905000876,
+    "contrast_low_5pct": 0.11654277253586463,
+    "contrast_high_95pct": 0.24450273477068457
+  },
+  "low_quality_count": 27,
+  "low_quality_sample": [
+    {
+      "class": "dirty",
+      "filename": "dirty_06.png",
+      "width": 420,
+      "height": 328,
+      "brightness_mean": 0.44090929910776905,
+      "contrast_std": 0.22269871764544394,
+      "laplacian_blur_var": 0.0014419443207596585
+    },
+    {
+      "class": "dirty",
+      "filename": "dirty_13.png",
+      "width": 424,
+      "height": 320,
+      "brightness_mean": 0.6204030924729262,
+      "contrast_std": 0.24827066300097436,
+      "laplacian_blur_var": 0.0011987099218488527
+    },
+    {
+      "class": "dirty",
+      "filename": "dirty_21.png",
+      "width": 420,
+      "height": 320,
+      "brightness_mean": 0.4696811689821149,
+      "contrast_std": 0.21456862669541824,
+      "laplacian_blur_var": 0.0014122603282861036
+    },
+    {
+      "class": "dirty",
+      "filename": "dirty_25.png",
+      "width": 424,
+      "height": 220,
+      "brightness_mean": 0.5011609952604374,
+      "contrast_std": 0.2613977215899242,
+      "laplacian_blur_var": 0.0017121694097634401
+    },
+    {
+      "class": "dirty",
+      "filename": "dirty_30.png",
+      "width": 420,
+      "height": 220,
+      "brightness_mean": 0.5429788008518325,
+      "contrast_std": 0.2053824849548959,
+      "laplacian_blur_var": 0.000447176390595987
+    },
+    {
+      "class": "healthy",
+      "filename": "healthy_01.png",
+      "width": 424,
+      "height": 328,
+      "brightness_mean": 0.7221235899776189,
+      "contrast_std": 0.13080702822620063,
+      "laplacian_blur_var": 0.0004658502739528302
+    },
+    {
+      "class": "healthy",
+      "filename": "healthy_04.png",
+      "width": 416,
+      "height": 328,
+      "brightness_mean": 0.7774525820891943,
+      "contrast_std": 0.08656502947126138,
+      "laplacian_blur_var": 0.00023586116725992845
+    },
+    {
+      "class": "healthy",
+      "filename": "healthy_07.png",
+      "width": 424,
+      "height": 324,
+      "brightness_mean": 0.6309656467741288,
+      "contrast_std": 0.13728607215548275,
+      "laplacian_blur_var": 0.00033732854836973555
+    },
+    {
+      "class": "healthy",
+      "filename": "healthy_08.png",
+      "width": 420,
+      "height": 324,
+      "brightness_mean": 0.7066136047807084,
+      "contrast_std": 0.10533169882119953,
+      "laplacian_blur_var": 0.0002968152010180873
+    },
+    {
+      "class": "healthy",
+      "filename": "healthy_10.png",
+      "width": 416,
+      "height": 324,
+      "brightness_mean": 0.6025570432672551,
+      "contrast_std": 0.15020372272300356,
+      "laplacian_blur_var": 0.00044059192281339747
+    },
+    {
+      "class": "healthy",
+      "filename": "healthy_11.png",
+      "width": 420,
+      "height": 324,
+      "brightness_mean": 0.718731319168293,
+      "contrast_std": 0.09653088389178018,
+      "laplacian_blur_var": 0.00021170772957869875
+    },
+    {
+      "class": "healthy",
+      "filename": "healthy_13.png",
+      "width": 424,
+      "height": 320,
+      "brightness_mean": 0.7317728413202477,
+      "contrast_std": 0.1171328290471628,
+      "laplacian_blur_var": 0.00048029135176676013
+    },
+    {
+      "class": "healthy",
+      "filename": "healthy_19.png",
+      "width": 424,
+      "height": 320,
+      "brightness_mean": 0.7603333729170577,
+      "contrast_std": 0.12543767528013455,
+      "laplacian_blur_var": 0.0002616303639211669
+    },
+    {
+      "class": "healthy",
+      "filename": "healthy_24.png",
+      "width": 420,
+      "height": 320,
+      "brightness_mean": 0.6098493152533204,
+      "contrast_std": 0.10004359632511244,
+      "laplacian_blur_var": 0.0002740111046802991
+    },
+    {
+      "class": "healthy",
+      "filename": "healthy_26.png",
+      "width": 420,
+      "height": 220,
+      "brightness_mean": 0.6201047389798381,
+      "contrast_std": 0.1251852997267,
+      "laplacian_blur_var": 0.0003114260689377879
+    },
+    {
+      "class": "healthy",
+      "filename": "healthy_27.png",
+      "width": 420,
+      "height": 220,
+      "brightness_mean": 0.750381812938145,
+      "contrast_std": 0.1653304854288148,
+      "laplacian_blur_var": 0.0005899213447888451
+    },
+    {
+      "class": "healthy",
+      "filename": "healthy_28.png",
+      "width": 416,
+      "height": 220,
+      "brightness_mean": 0.6187045522267774,
+      "contrast_std": 0.09362114014750271,
+      "laplacian_blur_var": 0.000352760667891805
+    },
+    {
+      "class": "healthy",
+      "filename": "healthy_30.png",
+      "width": 420,
+      "height": 220,
+      "brightness_mean": 0.6209200928955617,
+      "contrast_std": 0.12428518895367036,
+      "laplacian_blur_var": 0.0003582232542437474
+    },
+    {
+      "class": "inflamed",
+      "filename": "inflamed_05.png",
+      "width": 420,
+      "height": 328,
+      "brightness_mean": 0.4258551178243712,
+      "contrast_std": 0.17657914466836305,
+      "laplacian_blur_var": 0.0013998822903210084
+    },
+    {
+      "class": "inflamed",
+      "filename": "inflamed_07.png",
+      "width": 424,
+      "height": 328,
+      "brightness_mean": 0.4742455687447761,
+      "contrast_std": 0.25955105844713594,
+      "laplacian_blur_var": 0.001584355804444292
+    },
+    {
+      "class": "inflamed",
+      "filename": "inflamed_08.png",
+      "width": 420,
+      "height": 328,
+      "brightness_mean": 0.48419937547583625,
+      "contrast_std": 0.2517759025625136,
+      "laplacian_blur_var": 0.0019550507066658377
+    },
+    {
+      "class": "inflamed",
+      "filename": "inflamed_24.png",
+      "width": 420,
+      "height": 324,
+      "brightness_mean": 0.6039127748652807,
+      "contrast_std": 0.09610374119284065,
+      "laplacian_blur_var": 0.00045079843594628664
+    },
+    {
+      "class": "inflamed",
+      "filename": "inflamed_26.png",
+      "width": 420,
+      "height": 220,
+      "brightness_mean": 0.5199776999792245,
+      "contrast_std": 0.252737245158084,
+      "laplacian_blur_var": 0.0008425753129153223
+    },
+    {
+      "class": "prolapse",
+      "filename": "prolapse_10.png",
+      "width": 416,
+      "height": 328,
+      "brightness_mean": 0.45191409733572685,
+      "contrast_std": 0.21759045625764542,
+      "laplacian_blur_var": 0.0011335377998599714
+    },
+    {
+      "class": "prolapse",
+      "filename": "prolapse_15.png",
+      "width": 420,
+      "height": 328,
+      "brightness_mean": 0.42862015317135244,
+      "contrast_std": 0.20470584014377602,
+      "laplacian_blur_var": 0.001710479002383831
+    },
+    {
+      "class": "prolapse",
+      "filename": "prolapse_23.png",
+      "width": 420,
+      "height": 324,
+      "brightness_mean": 0.4622948874566916,
+      "contrast_std": 0.2267934183845353,
+      "laplacian_blur_var": 0.001336776536476071
+    },
+    {
+      "class": "prolapse",
+      "filename": "prolapse_29.png",
+      "width": 420,
+      "height": 220,
+      "brightness_mean": 0.5427714676550937,
+      "contrast_std": 0.2572084304524031,
+      "laplacian_blur_var": 0.0010697911997905132
+    }
+  ],
+  "dimension_stats": {
+    "width_mean": 420.0,
+    "width_min": 416,
+    "width_max": 424,
+    "height_mean": 304.0,
+    "height_min": 220,
+    "height_max": 328,
+    "aspect_ratio_mean": 1.4157725630286606
+  },
+  "global_color_stats": {
+    "rgb_mean_mean": 0.5529112080732982
+  }
+}

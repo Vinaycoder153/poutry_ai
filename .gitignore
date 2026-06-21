@@ -1,0 +1,42 @@
+# Environments
+.venv/
+.venv-1/
+venv/
+env/
+.env
+
+# Node
+node_modules/
+dist/
+poutry_ai/node_modules/
+poutry_ai/dist/
+
+# SQLite databases
+backend/poultry.db
+*.db
+*.sqlite3
+
+# Backend Uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# ML Pipeline
+ml_pipeline/runs/
+ml_pipeline/checkpoints/
+poutry_ai/dataset/
+*.pth
+*.pt
+*.onnx
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/

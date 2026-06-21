@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-poultry_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-poultry_pass_123}
+      POSTGRES_DB: ${POSTGRES_DB:-poultry_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-poultry_admin} -d $${POSTGRES_DB:-poultry_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-poultry_admin}:${POSTGRES_PASSWORD:-poultry_pass_123}@db:5432/${POSTGRES_DB:-poultry_db}
+    volumes:
+      - ./ml_pipeline/checkpoints:/app/ml_pipeline/checkpoints
+      - uploads_data:/app/backend/uploads
+      - dataset_data:/app/poutry_ai/dataset
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./poutry_ai
+      dockerfile: Dockerfile
+    restart: always
+
+  nginx:
+    image: nginx:stable-alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./infra/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  postgres_data:
+  uploads_data:
+  dataset_data:
